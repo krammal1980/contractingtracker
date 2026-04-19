@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ContractLedger — Concrete Works v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b1015; --surface:#111920; --card:#16232e; --card2:#1a2a38;
+    --border:#1f3345; --accent:#e8a020; --accent2:#3db88a; --danger:#d94f4f;
+    --blue:#5b9bd5; --purple:#a078d8; --text:#d6e8f5; --muted:#5a7a94; --input-bg:#0b1015;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:'Barlow',sans-serif; overflow-x:hidden; font-size:14px; }
+
+  .app-header { background:var(--surface); border-bottom:2px solid var(--accent); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .app-title { font-family:'Bebas Neue'; font-size:22px; letter-spacing:3px; color:var(--accent); line-height:1; }
+  .app-subtitle { font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+  .back-btn { background:none; border:1px solid var(--border); color:var(--accent); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+
+  .tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { flex:1; min-width:78px; padding:11px 4px; font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; white-space:nowrap; }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  .panel { display:none; padding:14px; padding-bottom:100px; }
+  .panel.active { display:block; }
+
+  .section-label { font-family:'Bebas Neue'; font-size:16px; letter-spacing:2px; color:var(--muted); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .section-label .badge { font-family:'Barlow'; font-size:10px; background:var(--border); color:var(--muted); padding:2px 7px; border-radius:4px; letter-spacing:0; }
+
+  .project-card { background:var(--card); border:1px solid var(--border); border-radius:8px; margin-bottom:10px; overflow:hidden; cursor:pointer; }
+  .project-card-header { padding:12px 14px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .project-name { font-weight:600; font-size:14px; line-height:1.3; }
+  .project-client { font-size:11px; color:var(--muted); margin-top:2px; }
+  .project-status { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 7px; border-radius:3px; white-space:nowrap; }
+  .status-active { background:rgba(61,184,138,0.15); color:var(--accent2); }
+  .status-completed { background:rgba(232,160,32,0.15); color:var(--accent); }
+  .status-pending { background:rgba(90,122,148,0.15); color:var(--muted); }
+
+  .project-stats { padding:10px 14px; background:rgba(0,0,0,0.25); display:grid; grid-template-columns:repeat(3,1fr); gap:10px; border-top:1px solid var(--border); }
+  .stat-value { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; }
+  .stat-label { font-size:8px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:1px; }
+  .stat-green { color:var(--accent2); } .stat-orange { color:var(--accent); } .stat-red { color:var(--danger); } .stat-blue { color:var(--blue); }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 14px; border-radius:6px; border:none; cursor:pointer; font-family:'Barlow'; font-size:12px; font-weight:600; letter-spacing:0.5px; }
+  .btn:active { opacity:0.8; }
+  .btn-primary { background:var(--accent); color:#0b1015; }
+  .btn-secondary { background:var(--card2); color:var(--text); border:1px solid var(--border); }
+  .btn-danger { background:rgba(217,79,79,0.15); color:var(--danger); border:1px solid rgba(217,79,79,0.3); }
+  .btn-green { background:var(--accent2); color:#0b1015; }
+  .btn-blue { background:var(--blue); color:#0b1015; }
+  .btn-purple { background:var(--purple); color:#0b1015; }
+  .btn-sm { padding:6px 10px; font-size:11px; }
+  .btn-xs { padding:4px 8px; font-size:10px; }
+
+  .fab { position:fixed; bottom:20px; right:18px; width:52px; height:52px; border-radius:50%; background:var(--accent); color:#0b1015; border:none; font-size:26px; font-weight:300; cursor:pointer; box-shadow:0 4px 18px rgba(232,160,32,0.4); display:flex; align-items:center; justify-content:center; z-index:200; }
+
+  .form-group { margin-bottom:12px; }
+  .form-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:5px; display:block; }
+  .form-control { width:100%; background:var(--input-bg); border:1px solid var(--border); border-radius:6px; padding:9px 11px; color:var(--text); font-family:'Barlow'; font-size:14px; outline:none; }
+  .form-control:focus { border-color:var(--accent); }
+  select.form-control { appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%235a7a94'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:30px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:300; display:none; align-items:flex-end; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border-radius:14px 14px 0 0; width:100%; max-height:94vh; overflow-y:auto; padding:18px; border-top:3px solid var(--accent); }
+  .modal-title { font-family:'Bebas Neue'; font-size:20px; letter-spacing:2px; color:var(--accent); margin-bottom:14px; }
+  .modal-actions { display:flex; gap:8px; margin-top:14px; }
+
+  .bow-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .bow-table th { background:var(--bg); color:var(--muted); font-size:9px; letter-spacing:1px; text-transform:uppercase; padding:7px 5px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+  .bow-table td { padding:8px 5px; border-bottom:1px solid rgba(31,51,69,0.4); vertical-align:top; }
+  .amount-cell { font-family:'DM Mono',monospace; text-align:right; white-space:nowrap; }
+  .cat-header { background:var(--card2); }
+  .cat-header td { padding:10px; font-family:'Bebas Neue'; font-size:13px; letter-spacing:1.5px; color:var(--accent); }
+
+  .totals-box { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-top:12px; }
+  .total-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:13px; }
+  .total-row.grand { border-top:1px solid var(--border); margin-top:6px; padding-top:8px; }
+  .total-label { color:var(--muted); }
+  .total-value { font-family:'DM Mono',monospace; }
+  .grand .total-label { font-weight:700; color:var(--text); }
+  .grand .total-value { font-size:16px; color:var(--accent); font-weight:700; }
+
+  .empty { text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty-icon { font-size:38px; margin-bottom:10px; opacity:0.5; }
+
+  .fin-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .fin-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px; }
+  .fin-card.green { border-left:3px solid var(--accent2); }
+  .fin-card.orange { border-left:3px solid var(--accent); }
+  .fin-card.red { border-left:3px solid var(--danger); }
+  .fin-card.blue { border-left:3px solid var(--blue); }
+  .fin-card.purple { border-left:3px solid var(--purple); }
+  .fin-value { font-family:'DM Mono'; font-size:15px; font-weight:600; }
+  .fin-label { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+  .fin-sub { font-size:10px; color:var(--muted); margin-top:4px; font-family:'DM Mono'; }
+
+  .sub-tabs { display:flex; background:var(--surface); border-radius:6px; padding:3px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
+  .sub-tabs::-webkit-scrollbar { display:none; }
+  .sub-tab { flex:1; min-width:68px; padding:7px 5px; font-size:10px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); background:none; border:none; border-radius:4px; cursor:pointer; white-space:nowrap; }
+  .sub-tab.active { background:var(--accent); color:#0b1015; }
+
+  .cat-pill { display:inline-block; padding:2px 7px; border-radius:3px; font-size:9px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; }
+
+  .list-item { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:8px; }
+  .li-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .li-title { font-weight:600; font-size:13px; }
+  .li-meta { font-size:11px; color:var(--muted); margin-top:3px; }
+  .li-amount { font-family:'DM Mono'; font-size:14px; font-weight:600; white-space:nowrap; }
+  .li-actions { display:flex; gap:5px; margin-top:8px; justify-content:flex-end; }
+
+  .sub-item-row { display:grid; grid-template-columns:1fr auto auto auto; gap:6px; align-items:center; padding:5px 0; border-bottom:1px dashed var(--border); font-size:11px; }
+  .sub-item-row:last-child { border:none; }
+
+  .toast { position:fixed; bottom:88px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--accent2); color:var(--accent2); padding:9px 16px; border-radius:8px; font-size:12px; font-weight:600; z-index:500; display:none; white-space:nowrap; }
+  .toast.show { display:block; }
+
+  .cat-chip { display:inline-block; padding:6px 10px; margin:3px 3px 3px 0; border-radius:5px; background:var(--card); border:1px solid var(--border); cursor:pointer; font-size:11px; font-weight:600; }
+  .cat-chip.active { background:var(--accent); color:#0b1015; border-color:var(--accent); }
+
+  .search-box { position:relative; margin-bottom:12px; }
+  .search-box input { padding-left:34px; }
+  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; }
+
+  .prog-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:5px; }
+  .prog-fill { height:100%; background:var(--accent2); transition:width 0.3s; }
+  .prog-fill.orange { background:var(--accent); } .prog-fill.red { background:var(--danger); }
+
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .sb-item-card { background:var(--card2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; margin-bottom:6px; }
+  .sb-item-head { display:flex; justify-content:space-between; align-items:center; font-size:11px; gap:8px; }
+  .sb-qty-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:6px; align-items:center; }
+  .sb-qty-row .form-control { padding:5px 7px; font-size:12px; }
+
+  .divider { height:1px; background:var(--border); margin:14px 0; }
+  .hint { font-size:10px; color:var(--muted); font-style:italic; }
+  body.modal-open { overflow:hidden; }
+
+  /* Database sub-tabs */
+  .db-tabs { display:flex; gap:4px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
+  .db-tabs::-webkit-scrollbar { display:none; }
+  .db-tab { padding:8px 12px; font-size:11px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:6px; cursor:pointer; white-space:nowrap; }
+  .db-tab.active { background:var(--accent); color:#0b1015; border-color:var(--accent); }
+
+  /* Color swatch */
+  .swatch { width:16px; height:16px; border-radius:3px; display:inline-block; vertical-align:middle; margin-right:6px; }
+  .color-picker { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+  .color-option { width:26px; height:26px; border-radius:5px; cursor:pointer; border:2px solid transparent; }
+  .color-option.active { border-color:var(--text); }
+
+  /* Category price row */
+  .cat-price-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:center; padding:5px 0; border-bottom: 1px dashed var(--border); }
+  .cat-price-row:last-child { border-bottom: none; }
+  .cat-price-row .form-control { padding:6px 8px; font-size:12px; }
+
+  /* Db list item */
+  .db-item { background:var(--card); border:1px solid var(--border); border-radius:7px; padding:10px 12px; margin-bottom:7px; }
+  .db-item-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .db-item-title { font-weight:600; font-size:13px; }
+  .db-item-meta { font-size:10px; color:var(--muted); margin-top:2px; }
+
+  /* Sub price table */
+  .sub-price-table { width:100%; font-size:11px; margin-top:6px; }
+  .sub-price-table td { padding:4px 6px; border-bottom:1px dashed var(--border); }
+  .sub-price-table td:first-child { color:var(--muted); }
+  .sub-price-table td:nth-child(2) { font-family:'DM Mono'; text-align:right; color:var(--accent2); }
+
+  datalist { display:none; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="app-title">ContractLedger</div>
+    <div class="app-subtitle">Concrete Works</div>
+  </div>
+  <div>
+    <div style="text-align:right">
+      <div style="font-family:'DM Mono';font-size:13px;color:var(--accent2)" id="hTotalProjects">0</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px">PROJECTS</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="topTabs">
+  <button class="tab active" onclick="switchTab('projects')">Projects</button>
+  <button class="tab" onclick="switchTab('project')">Project</button>
+  <button class="tab" onclick="switchTab('overview')">Overview</button>
+  <button class="tab" onclick="switchTab('db')">Data</button>
+</div>
+
+<div class="panel active" id="panel-projects">
+  <div class="section-label"><span>All Projects</span><span class="badge" id="projectCount">0</span></div>
+  <div class="search-box">
+    <span class="search-icon">&#128269;</span>
+    <input class="form-control" id="projectSearch" placeholder="Search..." oninput="renderProjects()">
+  </div>
+  <div id="projectList"></div>
+</div>
+
+<div class="panel" id="panel-project">
+  <div id="projectDetail">
+    <div class="empty"><div class="empty-icon">&#128196;</div><div>Select a project to view details</div></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-overview">
+  <div class="section-label">Portfolio Overview</div>
+  <div class="fin-grid" id="overviewStats"></div>
+  <div class="section-label">By Project</div>
+  <div id="overviewProjects"></div>
+</div>
+
+<div class="panel" id="panel-db">
+  <div class="section-label">Master Data</div>
+  <div class="db-tabs" id="dbTabs">
+    <button class="db-tab active" onclick="switchDbTab('categories')">Categories</button>
+    <button class="db-tab" onclick="switchDbTab('subs')">Subcontractors</button>
+    <button class="db-tab" onclick="switchDbTab('clients')">Clients</button>
+    <button class="db-tab" onclick="switchDbTab('locations')">Locations / Areas</button>
+    <button class="db-tab" onclick="switchDbTab('lots')">Lot Numbers</button>
+  </div>
+  <div id="dbContent"></div>
+</div>
+
+<button class="fab" id="fabBtn" onclick="handleFab()">+</button>
+
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <div class="modal-title" id="projectModalTitle">New Project</div>
+    
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Area *</label>
+        <select class="form-control" id="pLocation"></select>
+      </div>
+      <div class="form-group"><label class="form-label">Lot # *</label>
+        <select class="form-control" id="pLot"></select>
+      </div>
+    </div>
+    
+    <div class="form-group"><label class="form-label">Client</label>
+      <input class="form-control" id="pClient" list="dl-clients" placeholder="Choose or type">
+      <datalist id="dl-clients"></datalist>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Status</label><select class="form-control" id="pStatus"><option value="active">Active</option><option value="pending">Pending</option><option value="completed">Completed</option></select></div>
+      <div class="form-group"><label class="form-label">Start Date</label><input class="form-control" id="pStartDate" type="date"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contract Type *</label>
+      <div style="display:flex;gap:6px">
+        <div class="cat-chip" id="ctypeItems" onclick="setContractType('items')" style="flex:1;text-align:center">By Items</div>
+        <div class="cat-chip" id="ctypeFixed" onclick="setContractType('fixed')" style="flex:1;text-align:center">Fixed</div>
+        <div class="cat-chip" id="ctypeNone" onclick="setContractType('none')" style="flex:1;text-align:center">None</div>
+      </div>
+      <div class="hint" id="ctypeHint" style="margin-top:5px"></div>
+    </div>
+    <div class="form-group" id="pFixedTotalGroup" style="display:none">
+      <label class="form-label">Contract Total Amount *</label>
+      <input class="form-control" id="pFixedTotal" type="number" step="0.01">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Project-Specific Category Prices</label>
+      <div id="pCustomPrices" style="margin-top:4px; max-height: 150px; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px;"></div>
+      <div class="hint">Override the global client default price specifically for this project's BOQ items.</div>
+    </div>
+
+    <div class="form-group"><label class="form-label">Currency</label>
+      <select class="form-control" id="pCurrency"><option value="$">USD</option><option value="€">EUR</option><option value="£">GBP</option><option value="AED">AED</option><option value="SAR">SAR</option><option value="LBP">LBP</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Assigned Subcontractor (default)</label>
+      <select class="form-control" id="pDefaultSub"><option value="">— None —</option></select>
+      <div class="hint">Used to auto-fill sub prices on BOQ items.</div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><input class="form-control" id="pNotes"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('projectModal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="itemModal">
+  <div class="modal">
+    <div class="modal-title" id="itemModalTitle">Add BOQ Item</div>
+    <div class="form-group">
+      <label class="form-label">Category *</label>
+      <select class="form-control" id="iCategory" onchange="onCategoryChange()"></select>
+      <div class="hint" id="iCatHint" style="margin-top:5px"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Description *</label><input class="form-control" id="iDesc" placeholder="e.g. Ground Floor Columns"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Location (e.g. W Floor)</label>
+        <input class="form-control" id="iLocation" list="dl-i-locations" placeholder="Zone / area">
+        <datalist id="dl-i-locations"></datalist>
+      </div>
+      <div class="form-group"><label class="form-label">Unit</label>
+        <select class="form-control" id="iUnit"><option value="m3">m³</option><option value="m2">m²</option><option value="lm">lm</option><option value="ton">ton</option><option value="kg">kg</option><option value="pcs">pcs</option><option value="lot">lot</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quantity</label><input class="form-control" id="iQty" type="number" step="0.01" oninput="calcItemTotal()"></div>
+      <div class="form-group"><label class="form-label">Client Price</label><input class="form-control" id="iPrice" type="number" step="0.01" oninput="calcItemTotal()"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Sub Price (optional override)</label>
+      <input class="form-control" id="iSubPrice" type="number" step="0.01" placeholder="Leave empty to use category default">
+    </div>
+    <div class="totals-box" style="padding:10px 12px"><div class="total-row"><span class="total-label">Line Total (Client)</span><span class="total-value" id="itemTotalPreview" style="color:var(--accent);font-size:16px">0.00</span></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('itemModal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal">
+    <div class="modal-title" id="paymentModalTitle">Client Payment Received</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Date</label><input class="form-control" id="payDate" type="date"></div>
+      <div class="form-group"><label class="form-label">Amount *</label><input class="form-control" id="payAmount" type="number" step="0.01"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Method</label><select class="form-control" id="payMethod"><option value="cash">Cash</option><option value="bank">Bank Transfer</option><option value="check">Check</option><option value="other">Other</option></select></div>
+    <div class="form-group"><label class="form-label">Reference / Note</label><input class="form-control" id="payNote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('paymentModal')">Cancel</button>
+      <button class="btn btn-green" style="flex:2" onclick="savePayment()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="expenseModal">
+  <div class="modal">
+    <div class="modal-title" id="expenseModalTitle">New Expense</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Type *</label><select class="form-control" id="eType"><option value="materials">Materials</option><option value="labor">Outside Labor</option><option value="equipment">Equipment</option><option value="transport">Transport</option><option value="fuel">Fuel</option><option value="misc">Miscellaneous</option></select></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-control" id="eDate" type="date"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Description *</label><input class="form-control" id="eDesc"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Vendor</label><input class="form-control" id="eVendor"></div>
+      <div class="form-group"><label class="form-label">Amount *</label><input class="form-control" id="eAmount" type="number" step="0.01"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Note</label><input class="form-control" id="eNote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('expenseModal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveExpense()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="subBillModal">
+  <div class="modal">
+    <div class="modal-title" id="subBillModalTitle">Subcontractor Bill</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Subcontractor *</label>
+        <select class="form-control" id="sbName" onchange="onSubChange()"></select>
+      </div>
+      <div class="form-group"><label class="form-label">Bill Date</label><input class="form-control" id="sbDate" type="date"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Bill Reference</label><input class="form-control" id="sbRef" placeholder="e.g. Bill #1"></div>
+    <div class="divider"></div>
+    <div class="form-label" style="margin-bottom:8px">Bill Items <span style="color:var(--muted);text-transform:none;font-weight:normal">(auto-filled from BOQ + sub's prices)</span></div>
+    <div id="sbItemsContainer"></div>
+    <div class="hint" id="sbHint">No BOQ items yet.</div>
+    <div class="totals-box" style="padding:10px 12px;margin-top:10px"><div class="total-row"><span class="total-label">Bill Total</span><span class="total-value" id="sbTotalPreview" style="color:var(--accent);font-size:16px;font-weight:700">0.00</span></div></div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label">Amount Paid Now (optional)</label><input class="form-control" id="sbPaid" type="number" step="0.01"></div>
+    <div class="form-group"><label class="form-label">Notes</label><input class="form-control" id="sbNote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('subBillModal')">Cancel</button>
+      <button class="btn btn-purple" style="flex:2" onclick="saveSubBill()">Save Bill</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="subPayModal">
+  <div class="modal">
+    <div class="modal-title">Pay Subcontractor</div>
+    <div id="subPayInfo" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Date</label><input class="form-control" id="spDate" type="date"></div>
+      <div class="form-group"><label class="form-label">Amount *</label><input class="form-control" id="spAmount" type="number" step="0.01"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Note</label><input class="form-control" id="spNote"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('subPayModal')">Cancel</button>
+      <button class="btn btn-purple" style="flex:2" onclick="saveSubPayment()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal">
+    <div class="modal-title" id="categoryModalTitle">New Category</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Name *</label><input class="form-control" id="catName" placeholder="e.g. Columns"></div>
+      <div class="form-group"><label class="form-label">Default Unit</label>
+        <select class="form-control" id="catUnit"><option value="m3">m³</option><option value="m2">m²</option><option value="lm">lm</option><option value="ton">ton</option><option value="kg">kg</option><option value="pcs">pcs</option><option value="lot">lot</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Global Default Client Price</label><input class="form-control" id="catClientPrice" type="number" step="0.01"></div>
+    <div class="form-group">
+      <label class="form-label">Default Sub Prices (per subcontractor)</label>
+      <div id="catSubPrices" style="margin-top:4px"></div>
+      <div class="hint">Leave empty if unknown. Used to auto-fill sub bills.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div class="color-picker" id="catColorPicker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('categoryModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="catDeleteBtn" onclick="deleteCategory()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveCategory()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="subModal">
+  <div class="modal">
+    <div class="modal-title" id="subModalTitle">New Subcontractor</div>
+    <div class="form-group"><label class="form-label">Name *</label><input class="form-control" id="subName"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-control" id="subPhone"></div>
+      <div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" id="subContact"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><input class="form-control" id="subNotes"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('subModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="subDeleteBtn" onclick="deleteSub()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveSub()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="simpleDbModal">
+  <div class="modal">
+    <div class="modal-title" id="simpleDbTitle">New Entry</div>
+    <div class="form-group"><label class="form-label" id="simpleDbLabel">Name *</label><input class="form-control" id="simpleDbName"></div>
+    <div class="form-group" id="simpleDbField2Group"><label class="form-label" id="simpleDbLabel2">Notes</label><input class="form-control" id="simpleDbField2"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('simpleDbModal')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="simpleDbDeleteBtn" onclick="deleteSimpleDb()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveSimpleDb()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--danger)">Confirm</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:14px" id="confirmText"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" style="flex:1" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== STATE ===================== */
+var projects = [];
+var db = {
+  categories: [],   // {id, name, unit, clientPrice, subPrices:{subId:price}, color}
+  subs: [],         // {id, name, phone, contact, notes}
+  clients: [],      // {id, name, notes}
+  locations: [],    // {id, name, notes}
+  lots: []          // {id, name, notes}
+};
+var currentProjectId = null;
+var currentSubTab = 'dashboard';
+var currentDbTab = 'categories';
+var editingProjectId = null;
+var editingItemId = null;
+var editingPaymentId = null;
+var editingExpenseId = null;
+var editingSubBillId = null;
+var editingCategoryId = null;
+var editingSubId = null;
+var editingSimpleDbType = null;
+var editingSimpleDbId = null;
+var payingSubBillId = null;
+
+var COLORS = ['#e8a020','#3db88a','#5b9bd5','#a078d8','#d94f4f','#e07b5a','#6db85a','#5ac8d9','#cc6fa6','#8090a0'];
+
+/* ===================== STORAGE ===================== */
+function saveAll() {
+  localStorage.setItem('cl_v3_projects', JSON.stringify(projects));
+  localStorage.setItem('cl_v3_db', JSON.stringify(db));
+}
+function loadAll() {
+  try { projects = JSON.parse(localStorage.getItem('cl_v3_projects') || '[]'); } catch(e){ projects = []; }
+  try { 
+    var d = JSON.parse(localStorage.getItem('cl_v3_db') || 'null');
+    if (d) db = Object.assign(db, d);
+  } catch(e){}
+  
+  projects.forEach(function(p){
+    p.items = p.items || [];
+    p.payments = p.payments || [];
+    p.expenses = p.expenses || [];
+    p.subBills = p.subBills || [];
+    p.customPrices = p.customPrices || {};
+  });
+  db.categories = db.categories || [];
+  db.subs = db.subs || [];
+  db.clients = db.clients || [];
+  db.locations = db.locations || [];
+  db.lots = db.lots || [];
+  if (!db.categories.length) seedDefaults();
+}
+
+function seedDefaults() {
+  var defaults = [
+    {name:'Columns', unit:'m3', color:'#5b9bd5'},
+    {name:'Walls',   unit:'m3', color:'#a078d8'},
+    {name:'Slabs',   unit:'m3', color:'#3db88a'},
+    {name:'Beams',   unit:'m3', color:'#e8a020'},
+    {name:'Footings',unit:'m3', color:'#e07b5a'},
+    {name:'Stairs',  unit:'m2', color:'#cc6fa6'}
+  ];
+  defaults.forEach(function(c){
+    db.categories.push({
+      id: uid(), name: c.name, unit: c.unit,
+      clientPrice: 0, subPrices: {}, color: c.color
+    });
+  });
+}
+
+/* ===================== UTILS ===================== */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmt(n, sym) { sym = sym || '$'; var num = parseFloat(n) || 0; return sym + ' ' + num.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtShort(n, sym) { sym = sym || '$'; var num = parseFloat(n) || 0; if (Math.abs(num) >= 1e6) return sym + (num/1e6).toFixed(1) + 'M'; if (Math.abs(num) >= 1e3) return sym + (num/1e3).toFixed(1) + 'K'; return sym + num.toFixed(0); }
+function toast(m) { var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},2000); }
+function getProject(id) { return projects.find(function(x){ return x.id === id; }); }
+function currentProject() { return getProject(currentProjectId); }
+function getCategory(id) { return db.categories.find(function(c){ return c.id === id; }); }
+function getCategoryByName(name) { return db.categories.find(function(c){ return c.name === name; }); }
+function getSub(id) { return db.subs.find(function(s){ return s.id === id; }); }
+
+function categoryStyle(c) {
+  if (!c) return '';
+  var col = c.color || '#5a7a94';
+  return 'background:' + col + '22; color:' + col + ';';
+}
+
+/* ===================== CALC ===================== */
+function calcProjectTotals(p) {
+  var itemsTotal = (p.items||[]).reduce(function(s,i){ return s + (i.qty||0)*(i.price||0); }, 0);
+  var ctype = p.contractType || 'items';
+  var contractTotal;
+  if (ctype === 'fixed') contractTotal = parseFloat(p.fixedTotal) || 0;
+  else if (ctype === 'none') contractTotal = 0;
+  else contractTotal = itemsTotal;
+  var received = (p.payments||[]).reduce(function(s,x){ return s + (x.amount||0); }, 0);
+  var expenses = (p.expenses||[]).reduce(function(s,x){ return s + (x.amount||0); }, 0);
+  var subBilled = 0, subPaid = 0;
+  (p.subBills||[]).forEach(function(sb) {
+    var bTotal = (sb.lines||[]).reduce(function(s,l){ return s + (l.qty||0)*(l.price||0); }, 0);
+    subBilled += bTotal;
+    subPaid += (sb.payments||[]).reduce(function(s,x){ return s + (x.amount||0); }, 0);
+  });
+  var totalOutflow = expenses + subPaid;
+  return {
+    contractType: ctype,
+    itemsTotal: itemsTotal,
+    contractTotal: contractTotal,
+    hasContract: ctype !== 'none',
+    received: received,
+    outstanding: ctype === 'none' ? 0 : contractTotal - received,
+    expenses: expenses,
+    subBilled: subBilled,
+    subPaid: subPaid,
+    subOutstanding: subBilled - subPaid,
+    totalOutflow: totalOutflow,
+    profit: received - totalOutflow,
+    expectedProfit: ctype === 'none' ? (received - subBilled - expenses) : (contractTotal - subBilled - expenses)
+  };
+}
+
+/* ===================== TABS ===================== */
+function switchTab(id) {
+  var tabs = ['projects','project','overview','db'];
+  document.querySelectorAll('#topTabs .tab').forEach(function(t,i){ t.classList.toggle('active', tabs[i]===id); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-'+id).classList.add('active');
+  if (id === 'projects') renderProjects();
+  if (id === 'project') renderProjectDetail();
+  if (id === 'overview') renderOverview();
+  if (id === 'db') renderDb();
+  updateFab();
+}
+
+function switchSubTab(id) { currentSubTab = id; renderProjectDetail(); }
+function switchDbTab(id) {
+  currentDbTab = id;
+  document.querySelectorAll('#dbTabs .db-tab').forEach(function(t){
+    t.classList.toggle('active', t.textContent.toLowerCase().indexOf(id.slice(0,3)) >= 0 || (id==='subs' && t.textContent.toLowerCase().indexOf('sub')>=0));
+  });
+  renderDb();
+}
+
+function updateFab() {
+  var fab = document.getElementById('fabBtn');
+  var active = document.querySelector('.tab.active');
+  if (!active) { fab.style.display='none'; return; }
+  var label = active.textContent.toLowerCase();
+  if (label === 'projects' || label === 'data') fab.style.display='flex';
+  else if (label === 'project' && currentProjectId) fab.style.display='flex';
+  else fab.style.display='none';
+}
+
+function handleFab() {
+  var active = document.querySelector('.tab.active');
+  if (!active) return;
+  var label = active.textContent.toLowerCase();
+  if (label === 'projects') openProjectModal();
+  else if (label === 'data') openDbAdd();
+  else if (label === 'project' && currentProjectId) {
+    if (currentSubTab === 'boq') openItemModal();
+    else if (currentSubTab === 'payments') openPaymentModal();
+    else if (currentSubTab === 'expenses') openExpenseModal();
+    else if (currentSubTab === 'subs') openSubBillModal();
+    else openItemModal();
+  }
+}
+
+function openDbAdd() {
+  if (currentDbTab === 'categories') openCategoryModal();
+  else if (currentDbTab === 'subs') openSubModal();
+  else openSimpleDbModal(currentDbTab);
+}
+
+/* ===================== PROJECTS LIST ===================== */
+function renderProjects() {
+  var q = (document.getElementById('projectSearch').value || '').toLowerCase();
+  var list = document.getElementById('projectList');
+  document.getElementById('projectCount').textContent = projects.length;
+  document.getElementById('hTotalProjects').textContent = projects.length;
+  var filtered = projects.filter(function(p){ return !q || p.name.toLowerCase().includes(q) || (p.client||'').toLowerCase().includes(q); });
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">&#128194;</div><div>No projects. Tap + to create.</div></div>';
+    return;
+  }
+  var html = '';
+  filtered.forEach(function(p) {
+    var t = calcProjectTotals(p);
+    var sc = p.status === 'active' ? 'status-active' : (p.status === 'completed' ? 'status-completed' : 'status-pending');
+    html += '<div class="project-card" onclick="selectProject(\'' + p.id + '\')">';
+    html += '<div class="project-card-header">';
+    html += '<div style="flex:1;min-width:0"><div class="project-name">' + esc(p.name) + '</div>';
+    var meta = [];
+    if (p.client) meta.push(esc(p.client));
+    if (p.location) meta.push(esc(p.location));
+    if (p.lot) meta.push('Lot ' + esc(p.lot));
+    html += '<div class="project-client">' + (meta.join(' &bull; ') || 'No details') + '</div></div>';
+    html += '<span class="project-status ' + sc + '">' + p.status + '</span>';
+    html += '</div>';
+    html += '<div class="project-stats">';
+    var contractLabel = t.hasContract ? 'Contract' : 'BOQ Ref';
+    var contractVal = t.hasContract ? t.contractTotal : t.itemsTotal;
+    html += '<div><div class="stat-value stat-orange">' + (contractVal>0 ? fmtShort(contractVal, p.currency) : '—') + '</div><div class="stat-label">' + contractLabel + '</div></div>';
+    html += '<div><div class="stat-value stat-green">' + fmtShort(t.received, p.currency) + '</div><div class="stat-label">Received</div></div>';
+    html += '<div><div class="stat-value ' + (t.profit >= 0 ? 'stat-green' : 'stat-red') + '">' + fmtShort(t.profit, p.currency) + '</div><div class="stat-label">Profit</div></div>';
+    html += '</div></div>';
+  });
+  list.innerHTML = html;
+}
+
+function selectProject(id) { currentProjectId = id; currentSubTab = 'dashboard'; switchTab('project'); }
+
+/* ===================== PROJECT DETAIL ===================== */
+function renderProjectDetail() {
+  var p = currentProject();
+  var container = document.getElementById('projectDetail');
+  if (!p) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#128196;</div><div>Select a project from the Projects tab</div></div>';
+    updateFab(); return;
+  }
+  var t = calcProjectTotals(p);
+  var sym = p.currency || '$';
+
+  var html = '';
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+  html += '<button class="back-btn" onclick="switchTab(\'projects\')">&#8592;</button>';
+  html += '<div style="flex:1;min-width:0">';
+  html += '<div style="font-family:Bebas Neue;font-size:18px;letter-spacing:2px;color:var(--accent);line-height:1">' + esc(p.name) + '</div>';
+  var meta = [];
+  if (p.client) meta.push(esc(p.client));
+  if (p.location) meta.push(esc(p.location));
+  if (p.lot) meta.push('Lot ' + esc(p.lot));
+  html += '<div style="font-size:11px;color:var(--muted)">' + meta.join(' &bull; ') + '</div>';
+  html += '</div>';
+  html += '<button class="btn btn-secondary btn-sm" onclick="openEditProject(\'' + p.id + '\')">Edit</button>';
+  html += '</div>';
+
+  html += '<div class="sub-tabs">';
+  var subs = [['dashboard','Dashboard'],['boq','BOQ'],['payments','Paid In'],['expenses','Expenses'],['subs','Subs']];
+  subs.forEach(function(s){
+    html += '<button class="sub-tab' + (currentSubTab===s[0]?' active':'') + '" onclick="switchSubTab(\'' + s[0] + '\')">' + s[1] + '</button>';
+  });
+  html += '</div>';
+
+  if (currentSubTab === 'dashboard') html += renderDashboard(p, t, sym);
+  else if (currentSubTab === 'boq') html += renderBOQ(p, sym);
+  else if (currentSubTab === 'payments') html += renderPayments(p, sym);
+  else if (currentSubTab === 'expenses') html += renderExpenses(p, sym);
+  else if (currentSubTab === 'subs') html += renderSubs(p, sym);
+
+  container.innerHTML = html;
+  updateFab();
+}
+
+function renderDashboard(p, t, sym) {
+  var hasContract = t.hasContract;
+  var progPct = hasContract && t.contractTotal > 0 ? Math.min(100, (t.received/t.contractTotal)*100) : 0;
+  var ctypeLabel = t.contractType === 'fixed' ? 'Fixed Contract' : (t.contractType === 'items' ? 'Billed by BOQ Items' : 'No Contract Total');
+  var html = '';
+  html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:11px;display:flex;justify-content:space-between;align-items:center">';
+  html += '<span style="color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-size:10px">Contract Type</span>';
+  html += '<span style="color:var(--accent);font-weight:600">' + ctypeLabel + '</span>';
+  html += '</div>';
+
+  html += '<div class="fin-grid">';
+  if (hasContract) {
+    var sublabel = t.contractType === 'fixed' ? ('BOQ: ' + fmtShort(t.itemsTotal, sym)) : ((p.items||[]).length + ' items');
+    html += '<div class="fin-card orange"><div class="fin-value">' + fmt(t.contractTotal, sym) + '</div><div class="fin-label">Contract Value</div><div class="fin-sub">' + sublabel + '</div></div>';
+  } else {
+    html += '<div class="fin-card orange"><div class="fin-value">' + fmt(t.itemsTotal, sym) + '</div><div class="fin-label">BOQ Value (ref)</div><div class="fin-sub">' + (p.items||[]).length + ' items</div></div>';
+  }
+  html += '<div class="fin-card green"><div class="fin-value">' + fmt(t.received, sym) + '</div><div class="fin-label">Received</div><div class="fin-sub">' + (p.payments||[]).length + ' payments</div></div>';
+  if (hasContract) {
+    html += '<div class="fin-card blue"><div class="fin-value">' + fmt(t.outstanding, sym) + '</div><div class="fin-label">Outstanding</div><div class="fin-sub">' + progPct.toFixed(0) + '% received</div></div>';
+  } else {
+    html += '<div class="fin-card blue"><div class="fin-value">' + (p.payments||[]).length + '</div><div class="fin-label">Payments</div><div class="fin-sub">No contract total</div></div>';
+  }
+  html += '<div class="fin-card purple"><div class="fin-value">' + fmt(t.subBilled, sym) + '</div><div class="fin-label">Sub Billed</div><div class="fin-sub">' + (p.subBills||[]).length + ' bills</div></div>';
+  html += '<div class="fin-card red"><div class="fin-value">' + fmt(t.expenses, sym) + '</div><div class="fin-label">Expenses</div><div class="fin-sub">' + (p.expenses||[]).length + ' items</div></div>';
+  html += '<div class="fin-card red"><div class="fin-value">' + fmt(t.subPaid, sym) + '</div><div class="fin-label">Paid to Subs</div><div class="fin-sub">Owing: ' + fmt(t.subOutstanding, sym) + '</div></div>';
+  html += '</div>';
+
+  if (hasContract) {
+    html += '<div class="totals-box">';
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:1px">COLLECTION PROGRESS</div>';
+    html += '<div class="prog-bar"><div class="prog-fill" style="width:' + progPct + '%"></div></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;font-family:DM Mono"><span>' + fmt(t.received, sym) + '</span><span>' + fmt(t.contractTotal, sym) + '</span></div>';
+    html += '</div>';
+
+    html += '<div class="totals-box" style="margin-top:10px">';
+    html += '<div class="total-row"><span class="total-label">Contract Value</span><span class="total-value">' + fmt(t.contractTotal, sym) + '</span></div>';
+    html += '<div class="total-row"><span class="total-label">&minus; Sub Billed</span><span class="total-value" style="color:var(--purple)">' + fmt(t.subBilled, sym) + '</span></div>';
+    html += '<div class="total-row"><span class="total-label">&minus; Other Expenses</span><span class="total-value" style="color:var(--danger)">' + fmt(t.expenses, sym) + '</span></div>';
+    html += '<div class="total-row grand"><span class="total-label">Expected Profit</span><span class="total-value" style="color:' + (t.expectedProfit>=0?'var(--accent2)':'var(--danger)') + '">' + fmt(t.expectedProfit, sym) + '</span></div>';
+    html += '</div>';
+  }
+
+  html += '<div class="totals-box" style="margin-top:10px">';
+  html += '<div class="total-row"><span class="total-label">Cash Received</span><span class="total-value" style="color:var(--accent2)">' + fmt(t.received, sym) + '</span></div>';
+  html += '<div class="total-row"><span class="total-label">&minus; Cash Paid Out</span><span class="total-value" style="color:var(--danger)">' + fmt(t.totalOutflow, sym) + '</span></div>';
+  html += '<div class="total-row grand"><span class="total-label">Cash Profit</span><span class="total-value" style="color:' + (t.profit>=0?'var(--accent2)':'var(--danger)') + '">' + fmt(t.profit, sym) + '</span></div>';
+  html += '</div>';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">';
+  html += '<button class="btn btn-primary" onclick="switchSubTab(\'boq\');setTimeout(openItemModal,50)">+ BOQ Item</button>';
+  html += '<button class="btn btn-green" onclick="switchSubTab(\'payments\');setTimeout(openPaymentModal,50)">+ Client Paid</button>';
+  html += '<button class="btn btn-purple" onclick="switchSubTab(\'subs\');setTimeout(openSubBillModal,50)">+ Sub Bill</button>';
+  html += '<button class="btn btn-secondary" onclick="switchSubTab(\'expenses\');setTimeout(openExpenseModal,50)">+ Expense</button>';
+  html += '</div>';
+
+  html += '<div style="margin-top:24px;text-align:center">';
+  html += '<button class="btn btn-danger btn-sm" onclick="confirmDeleteProject(\'' + p.id + '\')">Delete Project</button>';
+  html += '</div>';
+  return html;
+}
+
+function renderBOQ(p, sym) {
+  var items = p.items || [];
+  var t = calcProjectTotals(p);
+  var html = '';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div class="section-label" style="margin:0;border:none;padding:0">Bill of Quantities</div>';
+  html += '<button class="btn btn-primary btn-sm" onclick="openItemModal()">+ Item</button>';
+  html += '</div>';
+  if (t.contractType === 'fixed') {
+    html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--muted)">Fixed contract: <span style="color:var(--accent)">' + fmt(t.contractTotal, sym) + '</span>. BOQ is for tracking &amp; sub bills.</div>';
+  } else if (t.contractType === 'none') {
+    html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--muted)">No contract total. BOQ for internal tracking &amp; sub bills.</div>';
+  }
+  if (!items.length) {
+    html += '<div class="empty"><div class="empty-icon">&#128221;</div><div>No items yet. Tap + Item.</div></div>';
+    return html;
+  }
+  // Group by category
+  var byCat = {};
+  items.forEach(function(it){ var c = it.category || 'Other'; if (!byCat[c]) byCat[c]=[]; byCat[c].push(it); });
+  html += '<div style="overflow-x:auto"><table class="bow-table">';
+  html += '<thead><tr><th style="min-width:110px">Description</th><th>Qty</th><th>Unit</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody>';
+  Object.keys(byCat).forEach(function(cat) {
+    var catItems = byCat[cat];
+    var catTotal = catItems.reduce(function(s,i){ return s+(i.qty||0)*(i.price||0); },0);
+    html += '<tr class="cat-header"><td colspan="6">' + esc(cat) + ' <span style="float:right;font-family:DM Mono;font-size:11px;color:var(--accent2);letter-spacing:0;font-weight:normal">' + fmt(catTotal, sym) + '</span></td></tr>';
+    catItems.forEach(function(it) {
+      var tot = (it.qty||0)*(it.price||0);
+      html += '<tr>';
+      html += '<td><div style="font-weight:500">' + esc(it.desc) + '</div>';
+      if (it.location) html += '<div style="font-size:10px;color:var(--muted);margin-top:2px">' + esc(it.location) + '</div>';
+      html += '</td>';
+      html += '<td style="font-family:DM Mono;font-size:11px">' + (it.qty||0).toLocaleString() + '</td>';
+      html += '<td style="color:var(--muted);font-size:10px">' + esc(it.unit||'') + '</td>';
+      html += '<td class="amount-cell" style="font-size:11px">' + fmt(it.price, sym) + '</td>';
+      html += '<td class="amount-cell" style="color:var(--accent);font-size:12px">' + fmt(tot, sym) + '</td>';
+      html += '<td style="white-space:nowrap"><button class="btn btn-secondary btn-xs" onclick="openEditItem(\'' + it.id + '\')">&#9998;</button> <button class="btn btn-danger btn-xs" onclick="confirmDeleteItem(\'' + it.id + '\')">&times;</button></td>';
+      html += '</tr>';
+    });
+  });
+  html += '</tbody></table></div>';
+  var grand = items.reduce(function(s,i){ return s+(i.qty||0)*(i.price||0); },0);
+  var totalLabel = t.contractType === 'items' ? 'Contract Total' : (t.contractType === 'fixed' ? 'BOQ Sum (ref)' : 'BOQ Sum');
+  html += '<div class="totals-box">';
+  html += '<div class="total-row"><span class="total-label">' + items.length + ' line items</span><span class="total-value">&nbsp;</span></div>';
+  html += '<div class="total-row grand"><span class="total-label">' + totalLabel + '</span><span class="total-value">' + fmt(grand, sym) + '</span></div>';
+  if (t.contractType === 'fixed') {
+    html += '<div class="total-row"><span class="total-label" style="font-size:11px">Fixed Contract</span><span class="total-value" style="color:var(--accent2);font-size:13px">' + fmt(t.contractTotal, sym) + '</span></div>';
+    var diff = t.contractTotal - grand;
+    html += '<div class="total-row"><span class="total-label" style="font-size:11px">Difference</span><span class="total-value" style="color:' + (diff>=0?'var(--accent2)':'var(--danger)') + ';font-size:12px">' + fmt(diff, sym) + '</span></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderPayments(p, sym) {
+  var pays = (p.payments||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var t = calcProjectTotals(p);
+  var html = '';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div class="section-label" style="margin:0;border:none;padding:0">Client Payments</div>';
+  html += '<button class="btn btn-green btn-sm" onclick="openPaymentModal()">+ Payment</button>';
+  html += '</div>';
+  html += '<div class="fin-grid">';
+  html += '<div class="fin-card green"><div class="fin-value">' + fmt(t.received, sym) + '</div><div class="fin-label">Total Received</div></div>';
+  if (t.hasContract) html += '<div class="fin-card blue"><div class="fin-value">' + fmt(t.outstanding, sym) + '</div><div class="fin-label">Outstanding</div></div>';
+  else html += '<div class="fin-card blue"><div class="fin-value">' + pays.length + '</div><div class="fin-label">Payments Count</div></div>';
+  html += '</div>';
+  if (!pays.length) { html += '<div class="empty"><div class="empty-icon">&#128181;</div><div>No payments yet.</div></div>'; return html; }
+  pays.forEach(function(x) {
+    html += '<div class="list-item"><div class="li-header">';
+    html += '<div style="flex:1;min-width:0"><div class="li-title" style="color:var(--accent2)">' + fmt(x.amount, sym) + '</div>';
+    html += '<div class="li-meta">' + esc(x.date||'') + ' &bull; ' + esc(x.method||'') + (x.note ? ' &bull; ' + esc(x.note) : '') + '</div></div>';
+    html += '</div><div class="li-actions">';
+    html += '<button class="btn btn-secondary btn-xs" onclick="openEditPayment(\'' + x.id + '\')">Edit</button>';
+    html += '<button class="btn btn-danger btn-xs" onclick="confirmDeletePayment(\'' + x.id + '\')">Delete</button>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function renderExpenses(p, sym) {
+  var items = (p.expenses||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var total = items.reduce(function(s,x){ return s+(x.amount||0); },0);
+  var byType = {};
+  items.forEach(function(x){ var t = x.type || 'misc'; byType[t] = (byType[t]||0) + (x.amount||0); });
+  var html = '';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div class="section-label" style="margin:0;border:none;padding:0">Expenses</div>';
+  html += '<button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ Expense</button>';
+  html += '</div>';
+  html += '<div class="fin-grid">';
+  html += '<div class="fin-card red"><div class="fin-value">' + fmt(total, sym) + '</div><div class="fin-label">Total Expenses</div></div>';
+  html += '<div class="fin-card orange"><div class="fin-value">' + items.length + '</div><div class="fin-label">Entries</div></div>';
+  html += '</div>';
+  if (Object.keys(byType).length) {
+    html += '<div class="totals-box" style="margin-bottom:10px"><div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px">BY CATEGORY</div>';
+    Object.keys(byType).forEach(function(k){
+      html += '<div class="total-row"><span class="total-label" style="text-transform:capitalize">' + k + '</span><span class="total-value">' + fmt(byType[k], sym) + '</span></div>';
+    });
+    html += '</div>';
+  }
+  if (!items.length) { html += '<div class="empty"><div class="empty-icon">&#128195;</div><div>No expenses yet.</div></div>'; return html; }
+  items.forEach(function(x){
+    html += '<div class="list-item"><div class="li-header">';
+    html += '<div style="flex:1;min-width:0"><div class="li-title">' + esc(x.desc) + '</div>';
+    html += '<div class="li-meta">' + esc(x.date||'') + ' &bull; <span style="text-transform:capitalize">' + esc(x.type||'') + '</span>' + (x.vendor ? ' &bull; ' + esc(x.vendor) : '') + '</div></div>';
+    html += '<div class="li-amount" style="color:var(--danger)">' + fmt(x.amount, sym) + '</div>';
+    html += '</div><div class="li-actions">';
+    html += '<button class="btn btn-secondary btn-xs" onclick="openEditExpense(\'' + x.id + '\')">Edit</button>';
+    html += '<button class="btn btn-danger btn-xs" onclick="confirmDeleteExpense(\'' + x.id + '\')">Delete</button>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function renderSubs(p, sym) {
+  var bills = (p.subBills||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var t = calcProjectTotals(p);
+  var html = '';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div class="section-label" style="margin:0;border:none;padding:0">Subcontractor Bills</div>';
+  html += '<button class="btn btn-purple btn-sm" onclick="openSubBillModal()">+ Sub Bill</button>';
+  html += '</div>';
+  html += '<div class="fin-grid">';
+  html += '<div class="fin-card purple"><div class="fin-value">' + fmt(t.subBilled, sym) + '</div><div class="fin-label">Total Billed by Subs</div></div>';
+  html += '<div class="fin-card red"><div class="fin-value">' + fmt(t.subPaid, sym) + '</div><div class="fin-label">Paid to Subs</div></div>';
+  html += '<div class="fin-card blue"><div class="fin-value">' + fmt(t.subOutstanding, sym) + '</div><div class="fin-label">Owing to Subs</div></div>';
+  html += '<div class="fin-card green"><div class="fin-value">' + fmt(t.contractTotal - t.subBilled, sym) + '</div><div class="fin-label">Margin over Subs</div></div>';
+  html += '</div>';
+  if (!bills.length) { html += '<div class="empty"><div class="empty-icon">&#128188;</div><div>No sub bills yet.</div></div>'; return html; }
+  bills.forEach(function(b){
+    var bTotal = (b.lines||[]).reduce(function(s,l){ return s+(l.qty||0)*(l.price||0); },0);
+    var bPaid = (b.payments||[]).reduce(function(s,x){ return s+(x.amount||0); },0);
+    var bOwe = bTotal - bPaid;
+    var pct = bTotal>0 ? (bPaid/bTotal*100) : 0;
+    var subObj = getSub(b.subId);
+    var subName = subObj ? subObj.name : (b.name || 'Unknown');
+    html += '<div class="list-item">';
+    html += '<div class="li-header">';
+    html += '<div style="flex:1;min-width:0"><div class="li-title">' + esc(subName) + (b.ref ? ' <span style="font-weight:400;color:var(--muted);font-size:11px">(' + esc(b.ref) + ')</span>' : '') + '</div>';
+    html += '<div class="li-meta">' + esc(b.date||'') + ' &bull; ' + (b.lines||[]).length + ' lines</div></div>';
+    html += '<div class="li-amount" style="color:var(--purple)">' + fmt(bTotal, sym) + '</div>';
+    html += '</div>';
+    if ((b.lines||[]).length) {
+      html += '<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:5px;font-size:11px">';
+      (b.lines||[]).forEach(function(l){
+        if (!l.qty && !l.price) return;
+        var lt = (l.qty||0)*(l.price||0);
+        html += '<div class="sub-item-row">';
+        var locDisp = l.location ? ' <span style="color:var(--muted);font-size:10px">(' + esc(l.location) + ')</span>' : '';
+        html += '<span>' + esc(l.desc||'') + locDisp + '</span>';
+        html += '<span style="color:var(--muted);font-family:DM Mono">' + (l.qty||0) + ' ' + esc(l.unit||'') + '</span>';
+        html += '<span style="color:var(--muted);font-family:DM Mono">@' + (l.price||0) + '</span>';
+        html += '<span style="font-family:DM Mono;color:var(--accent2)">' + fmt(lt, sym) + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px"><span>Paid: ' + fmt(bPaid, sym) + '</span><span>Owe: ' + fmt(bOwe, sym) + '</span></div>';
+    var pclass = pct >= 100 ? '' : (pct >= 50 ? 'orange' : 'red');
+    html += '<div class="prog-bar"><div class="prog-fill ' + pclass + '" style="width:' + Math.min(100,pct) + '%"></div></div></div>';
+    html += '<div class="li-actions">';
+    html += '<button class="btn btn-green btn-xs" onclick="openSubPay(\'' + b.id + '\')">Pay</button>';
+    html += '<button class="btn btn-secondary btn-xs" onclick="openEditSubBill(\'' + b.id + '\')">Edit</button>';
+    html += '<button class="btn btn-danger btn-xs" onclick="confirmDeleteSubBill(\'' + b.id + '\')">Delete</button>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+/* ===================== OVERVIEW ===================== */
+function renderOverview() {
+  var totC = 0, totR = 0, totE = 0, totSP = 0, totSB = 0;
+  projects.forEach(function(p){
+    var t = calcProjectTotals(p);
+    totC += t.contractTotal; totR += t.received; totE += t.expenses; totSP += t.subPaid; totSB += t.subBilled;
+  });
+  var cashProfit = totR - totE - totSP;
+  var expProfit = totC - totE - totSB;
+  var container = document.getElementById('overviewStats');
+  var html = '';
+  html += '<div class="fin-card orange"><div class="fin-value">' + fmt(totC, '$') + '</div><div class="fin-label">Total Contracts</div></div>';
+  html += '<div class="fin-card green"><div class="fin-value">' + fmt(totR, '$') + '</div><div class="fin-label">Total Received</div></div>';
+  html += '<div class="fin-card red"><div class="fin-value">' + fmt(totE+totSP, '$') + '</div><div class="fin-label">Total Paid Out</div></div>';
+  html += '<div class="fin-card ' + (cashProfit>=0?'green':'red') + '"><div class="fin-value">' + fmt(cashProfit, '$') + '</div><div class="fin-label">Cash Profit</div></div>';
+  html += '<div class="fin-card purple"><div class="fin-value">' + fmt(totSB, '$') + '</div><div class="fin-label">Total Sub Bills</div></div>';
+  html += '<div class="fin-card ' + (expProfit>=0?'green':'red') + '"><div class="fin-value">' + fmt(expProfit, '$') + '</div><div class="fin-label">Expected Profit</div></div>';
+  container.innerHTML = html;
+  var list = document.getElementById('overviewProjects');
+  var sorted = projects.slice().sort(function(a,b){ return calcProjectTotals(b).contractTotal - calcProjectTotals(a).contractTotal; });
+  var listHtml = '';
+  sorted.forEach(function(p){
+    var t = calcProjectTotals(p);
+    var pct = t.contractTotal>0 ? (t.received/t.contractTotal*100) : 0;
+    listHtml += '<div class="project-card" onclick="selectProject(\'' + p.id + '\')">';
+    listHtml += '<div class="project-card-header">';
+    listHtml += '<div style="flex:1;min-width:0"><div class="project-name">' + esc(p.name) + '</div>';
+    listHtml += '<div class="project-client">' + fmt(t.contractTotal, p.currency) + ' &bull; ' + pct.toFixed(0) + '% received</div></div>';
+    listHtml += '<div style="text-align:right"><div style="font-family:DM Mono;font-size:13px;color:' + (t.profit>=0?'var(--accent2)':'var(--danger)') + '">' + fmtShort(t.profit, p.currency) + '</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px">PROFIT</div></div>';
+    listHtml += '</div>';
+    listHtml += '<div style="padding:0 14px 10px"><div class="prog-bar"><div class="prog-fill" style="width:' + Math.min(100,pct) + '%"></div></div></div>';
+    listHtml += '</div>';
+  });
+  list.innerHTML = listHtml || '<div class="empty"><div>No projects</div></div>';
+}
+
+/* ===================== DATABASE ===================== */
+function renderDb() {
+  var content = document.getElementById('dbContent');
+  // sync tab highlight
+  var mapping = ['categories','subs','clients','locations','lots'];
+  var tabs = document.querySelectorAll('#dbTabs .db-tab');
+  tabs.forEach(function(t,i){ t.classList.toggle('active', mapping[i] === currentDbTab); });
+
+  if (currentDbTab === 'categories') content.innerHTML = renderCategoriesDb();
+  else if (currentDbTab === 'subs') content.innerHTML = renderSubsDb();
+  else content.innerHTML = renderSimpleDb(currentDbTab);
+}
+
+function renderCategoriesDb() {
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div style="font-size:11px;color:var(--muted)">Categories with default prices used to auto-fill BOQ & sub bills</div>';
+  html += '<button class="btn btn-primary btn-sm" onclick="openCategoryModal()">+ Add</button>';
+  html += '</div>';
+  if (!db.categories.length) return html + '<div class="empty"><div>No categories. Tap + to add.</div></div>';
+  db.categories.forEach(function(c){
+    html += '<div class="db-item">';
+    html += '<div class="db-item-head">';
+    html += '<div style="flex:1;min-width:0"><div class="db-item-title"><span class="swatch" style="background:' + (c.color||'#5a7a94') + '"></span>' + esc(c.name) + ' <span style="color:var(--muted);font-size:11px;font-weight:400">(' + esc(c.unit||'') + ')</span></div>';
+    html += '<div class="db-item-meta">Client price: <span style="color:var(--accent);font-family:DM Mono">' + (c.clientPrice ? fmt(c.clientPrice) : '—') + '</span></div></div>';
+    html += '<button class="btn btn-secondary btn-xs" onclick="openEditCategory(\'' + c.id + '\')">Edit</button>';
+    html += '</div>';
+    var subCount = Object.keys(c.subPrices||{}).filter(function(k){ return (c.subPrices[k]||0) > 0; }).length;
+    if (subCount > 0) {
+      html += '<table class="sub-price-table"><tbody>';
+      Object.keys(c.subPrices||{}).forEach(function(sid){
+        var price = c.subPrices[sid];
+        if (!price) return;
+        var s = getSub(sid);
+        if (!s) return;
+        html += '<tr><td>' + esc(s.name) + '</td><td>' + fmt(price) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderSubsDb() {
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div style="font-size:11px;color:var(--muted)">Subcontractors used in sub bills</div>';
+  html += '<button class="btn btn-primary btn-sm" onclick="openSubModal()">+ Add</button>';
+  html += '</div>';
+  if (!db.subs.length) return html + '<div class="empty"><div>No subcontractors. Tap + to add.</div></div>';
+  db.subs.forEach(function(s){
+    html += '<div class="db-item"><div class="db-item-head">';
+    html += '<div style="flex:1;min-width:0"><div class="db-item-title">' + esc(s.name) + '</div>';
+    var meta = [];
+    if (s.contact) meta.push(esc(s.contact));
+    if (s.phone) meta.push(esc(s.phone));
+    if (meta.length) html += '<div class="db-item-meta">' + meta.join(' &bull; ') + '</div>';
+    if (s.notes) html += '<div class="db-item-meta">' + esc(s.notes) + '</div>';
+    html += '</div>';
+    html += '<button class="btn btn-secondary btn-xs" onclick="openEditSub(\'' + s.id + '\')">Edit</button>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function renderSimpleDb(type) {
+  var labels = { clients: 'Clients', locations: 'Locations / Areas', lots: 'Lot Numbers' };
+  var items = db[type];
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html += '<div style="font-size:11px;color:var(--muted)">' + labels[type] + '</div>';
+  html += '<button class="btn btn-primary btn-sm" onclick="openSimpleDbModal(\'' + type + '\')">+ Add</button>';
+  html += '</div>';
+  if (!items.length) return html + '<div class="empty"><div>No entries. Tap + to add.</div></div>';
+  items.forEach(function(x){
+    html += '<div class="db-item"><div class="db-item-head">';
+    html += '<div style="flex:1;min-width:0"><div class="db-item-title">' + esc(x.name) + '</div>';
+    if (x.notes) html += '<div class="db-item-meta">' + esc(x.notes) + '</div>';
+    html += '</div>';
+    html += '<button class="btn btn-secondary btn-xs" onclick="openEditSimpleDb(\'' + type + '\',\'' + x.id + '\')">Edit</button>';
+    html += '</div></div>';
+  });
+  return html;
+}
+
+/* ===================== DB MODALS: CATEGORY ===================== */
+function openCategoryModal() {
+  editingCategoryId = null;
+  document.getElementById('categoryModalTitle').textContent = 'New Category';
+  document.getElementById('catName').value = '';
+  document.getElementById('catUnit').value = 'm3';
+  document.getElementById('catClientPrice').value = '';
+  document.getElementById('catDeleteBtn').style.display = 'none';
+  window._catColor = COLORS[Math.floor(Math.random()*COLORS.length)];
+  window._catSubPrices = {};
+  renderCatColorPicker();
+  renderCatSubPrices();
+  openModal('categoryModal');
+  setTimeout(function(){ document.getElementById('catName').focus(); }, 200);
+}
+
+function openEditCategory(id) {
+  var c = getCategory(id); if (!c) return;
+  editingCategoryId = id;
+  document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+  document.getElementById('catName').value = c.name || '';
+  document.getElementById('catUnit').value = c.unit || 'm3';
+  document.getElementById('catClientPrice').value = c.clientPrice || '';
+  document.getElementById('catDeleteBtn').style.display = 'inline-flex';
+  window._catColor = c.color || COLORS[0];
+  window._catSubPrices = Object.assign({}, c.subPrices || {});
+  renderCatColorPicker();
+  renderCatSubPrices();
+  openModal('categoryModal');
+}
+
+function renderCatColorPicker() {
+  var container = document.getElementById('catColorPicker');
+  var html = '';
+  COLORS.forEach(function(col){
+    html += '<div class="color-option' + (col===window._catColor?' active':'') + '" style="background:' + col + '" onclick="selectCatColor(\'' + col + '\')"></div>';
+  });
+  container.innerHTML = html;
+}
+
+function selectCatColor(col) { window._catColor = col; renderCatColorPicker(); }
+
+function renderCatSubPrices() {
+  var container = document.getElementById('catSubPrices');
+  if (!db.subs.length) {
+    container.innerHTML
